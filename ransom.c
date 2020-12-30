@@ -14,11 +14,16 @@ void merge(char **array, int low, int mid, int high);
 void merge_sort(char** array, int low, int high);
 void free_mallocs(char **arr, int len);
 
+/*----------------------------CONSTANTS------------------------------*/
+enum CONSTS {WORD_MAX_SIZE = 6}; //Remeber '/0' at the end
+
+
+
 /**  
-    * @brief: this function will check if it is possible to make the ransom note from
-    *         words in array magazine.
-    * @param magazine_count: Nuber of words in the magzine. Integer between [1,3000].
-    * @param magazine: Array of the words in the magazine. Word length between [1,5].
+    * @brief: this function will check if it is possible to make the 
+    *         ransom note from Words in array magazine.
+    * @param magazine_count: Nuber of words in the magzine. Int IN[1,3000].
+    * @param magazine: Array of the words in the magazine. Word len in [1,5].
     * @param note_count: Nuber of words in the note. Integer between [1,3000].
     * @param note: Array of the words in the note. Word length between [1,5].
 */
@@ -27,8 +32,9 @@ void free_mallocs(char **arr, int len);
 void checkMagazine(int magazine_count, char** magazine, int note_count, char** note) {
     /*Method of work:
     1. Check lengths are valid.
-    2. Sort both arrays.
-    3. Go over note array, look for matching words in magazine array.
+    2. Create working array.
+    3. Sort both working arrays.
+    4. Go over note array, look for matching words in magazine array.
 
     We used sorted arrays instead of linked lists as proposed in the clue
     because we believe this implementation  is easier and has less complexity
@@ -41,40 +47,86 @@ void checkMagazine(int magazine_count, char** magazine, int note_count, char** n
         return;
     }
 
+    //Work arrays creation
+    char **mag_arr = malloc(sizeof(char *) * magazine_count);
+    if (mag_arr == NULL){
+        fprintf(stderr,"Malloc failed\n");
+        return;
+    }
+
+    char **note_arr = malloc(sizeof(char *) * note_count);
+    if (mag_arr == NULL){
+        fprintf(stderr,"Malloc failed\n");
+        free(mag_arr);
+        return;
+    }
+
+    for(int i=0; i<magazine_count;i++){
+        //Malloc the maximum size of the a word in bytes.
+        mag_arr[i] = malloc(sizeof(char) * WORD_MAX_SIZE);   
+        if (mag_arr[i] == NULL){
+            fprintf(stderr,"Malloc failed\n");
+            free_mallocs(mag_arr, i);
+            free(mag_arr);
+            return;
+        }
+        strcpy(mag_arr[i],magazine[i]);
+    }
+
+    for(int j=0; j<note_count;j++){
+        //Malloc the size of the string in bytes.
+        note_arr[j] = malloc(sizeof(char) * WORD_MAX_SIZE);   
+        if (note_arr[j] == NULL){
+            fprintf(stderr,"Malloc failed\n");
+            free_mallocs(mag_arr, magazine_count);
+            free_mallocs(note_arr, j);
+            free(mag_arr);
+            free(note_arr);
+            return;
+        }
+        strcpy(note_arr[j],note[j]);
+    }
+
     //Sort arrays
-    merge_sort(magazine, 0, magazine_count - 1);
-    for (int i=0; i<magazine_count; i++){
-        printf("%s\n", magazine[i]);
-    }
-    merge_sort(note, 0, note_count - 1);
-    for (int i=0; i<note_count; i++){
-        printf("%s\n", note[i]);
-    }
+    merge_sort(mag_arr, 0, magazine_count - 1);
+    merge_sort(note_arr, 0, note_count - 1);
 
     //Go over arrays
     int mag_idx = 0;
     int match_count = 0;
     int diff = 0;
     //If match_count = note_count, we have found all words.
-    for(int i=0; i < note_count && match_count < note_count; i++){
-        diff = strcmp(note[i],magazine[mag_idx]);
-        printf("%s\n",magazine[mag_idx] );
-        while(diff < 0 && mag_idx < magazine_count - 1){
+    for(int i=0; (i < note_count) && (match_count < note_count) && 
+        (mag_idx < magazine_count); i++){
+        diff = strcmp(note_arr[i],mag_arr[mag_idx]);
+        while(diff > 0 && mag_idx < magazine_count){
             mag_idx++;
-            printf("%d\n",mag_idx );
-            diff = strcmp(note[i],magazine[mag_idx]);
+            diff = strcmp(note_arr[i],mag_arr[mag_idx]);
         }
         if (diff == 0){
             match_count++;
             mag_idx++;
         } else{     
             printf("No");
+            free_mallocs(mag_arr, magazine_count);
+            free_mallocs(note_arr, note_count);
+            free(mag_arr);
+            free(note_arr);
             return;
-        }   /*If we exited the while without a match there will be no more matches for specific word
+        }   /*If we exited the while without a match there will be
+              no more matches for specific word
               and we can stop searching. */
     }
 
-    printf("Yes");
+    if(match_count == note_count){
+        printf("Yes");
+    } else {
+        printf("No");
+    }
+    free_mallocs(mag_arr, magazine_count);
+    free_mallocs(note_arr, note_count);
+    free(mag_arr);
+    free(note_arr);
 }
 
 int main()
@@ -205,12 +257,14 @@ void merge(char **array, int low, int mid, int high){
     char **right_arr = malloc(sizeof(char *) * right_len);
     if (right_arr == NULL){
         fprintf(stderr,"Malloc failed\n");
+        free(left_arr);
         return;
     }
 
     //Array creating
     for(int i=0; i<left_len;i++){
-        left_arr[i] = malloc(sizeof(array[low + i]));   //Malloc the size of the string in bytes.
+        //Malloc max size of string
+        left_arr[i] = malloc(sizeof(char*) * WORD_MAX_SIZE);
         if (left_arr[i] == NULL){
             fprintf(stderr,"Malloc failed\n");
             free_mallocs(left_arr, i);
@@ -223,7 +277,7 @@ void merge(char **array, int low, int mid, int high){
 
     for(int j=0; j<right_len;j++){
         //Malloc the size of the string in bytes.
-        right_arr[j] = malloc(sizeof(array[mid + j + 1]));   
+        right_arr[j] = malloc(sizeof(char*) * WORD_MAX_SIZE);   
         if (right_arr[j] == NULL){
             fprintf(stderr,"Malloc failed\n");
             free_mallocs(left_arr, left_len);
@@ -245,7 +299,6 @@ void merge(char **array, int low, int mid, int high){
             strcpy(array[a_idx], left_arr[l_idx]);
             l_idx++;
         } else{
-            //strcpy(right_arr[r_idx], array[a_idx]);
             strcpy(array[a_idx], right_arr[r_idx]);
             r_idx++;
         }
