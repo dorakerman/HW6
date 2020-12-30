@@ -97,7 +97,7 @@ void checkMagazine(int magazine_count, char** magazine, int note_count, char** n
     int diff = 0;
     //If match_count = note_count, we have found all words.
     for(int i=0; (i < note_count) && (match_count < note_count) && 
-        (mag_idx < magazine_count); i++){
+                                 (mag_idx < magazine_count); i++){
         diff = strcmp(note_arr[i],mag_arr[mag_idx]);
         while(diff > 0 && mag_idx < magazine_count){
             mag_idx++;
