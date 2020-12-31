@@ -10,8 +10,8 @@
 
 char* readline();
 char** split_string(char*);
-void merge(char **array, int low, int mid, int high);
-void merge_sort(char** array, int low, int high);
+int merge(char **array, int low, int mid, int high);
+int merge_sort(char** array, int low, int high);
 void free_mallocs(char **arr, int len);
 
 /*----------------------------CONSTANTS------------------------------*/
@@ -27,8 +27,6 @@ enum CONSTS {WORD_MAX_SIZE = 6}; //Remeber '/0' at the end
     * @param note_count: Nuber of words in the note. Integer between [1,3000].
     * @param note: Array of the words in the note. Word length between [1,5].
 */
-
-
 void checkMagazine(int magazine_count, char** magazine, int note_count, char** note) {
     /*Method of work:
     1. Check lengths are valid.
@@ -88,8 +86,23 @@ void checkMagazine(int magazine_count, char** magazine, int note_count, char** n
     }
 
     //Sort arrays
-    merge_sort(mag_arr, 0, magazine_count - 1);
-    merge_sort(note_arr, 0, note_count - 1);
+    if (merge_sort(mag_arr, 0, magazine_count - 1) < 0){
+        fprintf(stderr,"Error was detected, exiting...\n");
+        free_mallocs(mag_arr, magazine_count);
+        free_mallocs(note_arr, note_count);
+        free(mag_arr);
+        free(note_arr);
+        return;
+    }
+
+    if (merge_sort(note_arr, 0, note_count - 1) < 0){
+        fprintf(stderr,"Error was detected, exiting...\n");
+        free_mallocs(mag_arr, magazine_count);
+        free_mallocs(note_arr, note_count);
+        free(mag_arr);
+        free(note_arr);
+        return;
+    }
 
     //Go over arrays
     int mag_idx = 0;
@@ -242,8 +255,9 @@ char** split_string(char* str) {
     * @param low: Lowest index of array.
     * @param mid: Middle of array.
     * @param high: Highest index in array.
+    * @return: 0 if succeeded, -1 if failed.
 */
-void merge(char **array, int low, int mid, int high){
+int merge(char **array, int low, int mid, int high){
     //Init
     int left_len = mid - low + 1; //Length of left array
     int right_len = high - mid;
@@ -252,13 +266,13 @@ void merge(char **array, int low, int mid, int high){
     char **left_arr = malloc(sizeof(char *) * left_len);
     if (left_arr == NULL){
         fprintf(stderr,"Malloc failed\n");
-        return;
+        return -1;
     }
     char **right_arr = malloc(sizeof(char *) * right_len);
     if (right_arr == NULL){
         fprintf(stderr,"Malloc failed\n");
         free(left_arr);
-        return;
+        return -1;
     }
 
     //Array creating
@@ -270,7 +284,7 @@ void merge(char **array, int low, int mid, int high){
             free_mallocs(left_arr, i);
             free(left_arr);
             free(right_arr);
-            return;
+            return -1;
         }
         strcpy(left_arr[i],array[low + i]);
     }
@@ -284,7 +298,7 @@ void merge(char **array, int low, int mid, int high){
             free_mallocs(right_arr, j);
             free(left_arr);
             free(right_arr);
-            return;
+            return -1;
         }
         strcpy(right_arr[j],array[mid + j +1]);
     }
@@ -322,6 +336,8 @@ void merge(char **array, int low, int mid, int high){
     free(left_arr);
     free(right_arr);
 
+    return 0;
+
 
 }
 
@@ -330,14 +346,25 @@ void merge(char **array, int low, int mid, int high){
     * @param array: The array that needs to be sorted.
     * @param low: Lowest index of array.
     * @param high: Highest index in array.
+    * @return: 0 if succeeded, -1 if failed.
 */
-void merge_sort(char **array, int low, int high){
+int merge_sort(char **array, int low, int high){
     if(low < high){
         int mid = (low + high) / sizeof(short); //Size of short = 2
-        merge_sort(array, low, mid);
-        merge_sort(array, mid + 1, high);
-        merge(array, low, mid, high);
+        if(merge_sort(array, low, mid) < 0){
+            return -1;
+        }
+
+        if(merge_sort(array, mid + 1, high) < 0){
+            return -1;
+        }
+
+        if(merge(array, low, mid, high) < 0){
+            fprintf(stderr, "Error in merge" );
+            return -1;
+        }
     }
+    return 0;
 }
 
 /**  
@@ -349,3 +376,11 @@ void free_mallocs(char **array, int len){
         free(array[i]);
     }
 }
+
+/*
+Note about function checking:
+For the functions we implemnted we used return 0/-1 to
+indicate success or failure, this is used instead of
+exit because exit does not go back to the previos function.
+In that case, we have mallocs that are left unfreed.
+*/
